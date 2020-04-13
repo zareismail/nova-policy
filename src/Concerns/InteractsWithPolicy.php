@@ -22,11 +22,11 @@ trait InteractsWithPolicy
 
 	public function permissions()
 	{
-		return $this->belongsToMany(PolicyPermission::class, 'policy_user_permission');
+		return $this->belongsToMany(PolicyPermission::class, 'policy_user_permission', 'user_id');
 	}
 
 	public function roles()
 	{
-		return $this->belongsToMany(PolicyRole::class, 'policy_user_role');
+		return $this->belongsToMany(PolicyRole::class, 'policy_user_role', 'user_id');
 	}
 }
