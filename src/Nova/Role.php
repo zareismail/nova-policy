@@ -16,14 +16,14 @@ use Zareismail\NovaPolicy\Helper;
 use Zareismail\NovaPolicy\PolicyPermission; 
 use Zareismail\NovaPolicy\Contracts\Ownable; 
 
-class Role extends Resource
+abstract class Role extends Resource
 { 
     /**
      * The model the resource corresponds to.
      *
      * @var string
      */
-    public static $model = 'Zareismail\\NovaPolicy\\PolicyRole'; 
+    public static $model = 'Zareismail\\NovaPolicy\\PolicyRole';  
 
     /**
      * The relationships that should be eager loaded when performing an index query.
