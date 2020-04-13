@@ -6,8 +6,7 @@ use Laravel\Nova\Resource as NovaResource;
 use Illuminate\Http\Request;        
 
 abstract class Resource extends NovaResource
-{ 
-
+{  
     /**
      * The logical group associated with the resource.
      *
