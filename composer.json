@@ -1,0 +1,30 @@
+{
+    "name": "zareismail/nova-policy",
+    "description": "A Laravel Nova tool.",
+    "keywords": [
+        "laravel",
+        "nova"
+    ],
+    "license": "MIT",
+    "require": {
+        "php": ">=7.1.0",
+        "zareismail/nova-radio-field" : "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Zareismail\\NovaPolicy\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Zareismail\\NovaPolicy\\ToolServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
