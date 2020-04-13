@@ -2,8 +2,7 @@
 
 namespace Zareismail\NovaPolicy;
  
-use Illuminate\Support\ServiceProvider;
-use Laravel\Nova\Events\ServingNova;
+use Illuminate\Support\ServiceProvider; 
 use Laravel\Nova\Nova as LaravelNova; 
 use Illuminate\Database\Eloquent\Model;
 
@@ -16,23 +15,57 @@ class ToolServiceProvider extends ServiceProvider
      */
     public function boot()
     { 
-        LaravelNova::serving(function (ServingNova $event) {
-            LaravelNova::resources([
-                Nova\Role::class,
-            ]);
-        }); 
+        if ($this->app->runningInConsole()) {
+            $this->registerPublishing();
+        }
+
+        LaravelNova::serving([$this, 'servingNova']); 
+
+        $this->registerPolicies();
     } 
 
     /**
-     * Register any application services.
+     * Serving the Nova application.
+     *  
+     */
+    public function servingNova()
+    {
+        LaravelNova::resources([ 
+            Nova\Permission::class,
+        ]);
+    } 
+
+    /**
+     * Register the package's publishable resources.
      *
      * @return void
      */
-    public function register()
+    protected function registerPublishing()
+    { 
+        $this->publishes([
+            __DIR__.'/../database/migrations' => database_path('migrations')
+        ], 'nova-policy.migration');
+
+        $this->publishes([
+            __DIR__.'/../config/nova-policy.php' => config_path('nova-policy.php')
+        ], 'nova-policy.migration');
+    }
+
+    /**
+     * Register NovaPolicy policies.
+     *
+     * @return void
+     */
+    public function registerPolicies()
     {
         \Gate::policy(PolicyRole::class, Policies\RolePolicy::class); 
 
         \Gate::before(function($user, $ability, $arguments = []) { 
+            if(config('nova-policy.ignore', false) === true) {
+                // Ignore managing access
+                return null;
+            }
+
             if(method_exists($user, 'isDeveloper') && $user->isDeveloper()) {
                 // developer access
                 return true;
