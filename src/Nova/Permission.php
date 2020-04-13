@@ -47,8 +47,6 @@ class Permission extends Resource
      */
     public function title()
     {
-        return Str::title(
-            Str::snake(str_replace('.', ' ', parent::title()),  ' ')
-        );
+        return Str::title(Str::snake(str_replace('.', ' ', parent::title()),  ' '));
     }
 }
