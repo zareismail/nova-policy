@@ -96,7 +96,7 @@ class ToolServiceProvider extends ServiceProvider
                 return false;
             }
 
-            if($user->isNot($arguments[0]->owner())) {
+            if($user->isNot($arguments[0]->owner)) {
                 // wrong owner
                 return false;
             }
