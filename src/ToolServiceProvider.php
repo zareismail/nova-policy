@@ -5,6 +5,7 @@ namespace Zareismail\NovaPolicy;
 use Illuminate\Support\ServiceProvider; 
 use Laravel\Nova\Nova as LaravelNova; 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Gate;
 
 class ToolServiceProvider extends ServiceProvider
 {
@@ -19,8 +20,7 @@ class ToolServiceProvider extends ServiceProvider
             $this->registerPublishing();
         }
 
-        LaravelNova::serving([$this, 'servingNova']); 
-
+        LaravelNova::serving([$this, 'servingNova']);  
         $this->registerPolicies();
     } 
 
@@ -57,12 +57,12 @@ class ToolServiceProvider extends ServiceProvider
      * @return void
      */
     public function registerPolicies()
-    {
-        \Gate::policy(PolicyRole::class, Policies\RolePolicy::class); 
+    { 
+        Gate::policy(PolicyRole::class, Policies\RolePolicy::class); 
 
-        \Gate::before(function($user, $ability, $arguments = []) { 
-            if(config('nova-policy.ignore', false) === true) {
-                // Ignore managing access
+        Gate::before(function($user, $ability, $arguments = []) { 
+            if(boolval(config('nova-policy.ignore', false))) {
+                // Ignore managing access via configurations
                 return null;
             }
 
@@ -86,8 +86,13 @@ class ToolServiceProvider extends ServiceProvider
                 return $user->hasPermission($ability);
             }   
 
+            if(is_null(Gate::getPolicyFor($arguments[0]))) {
+                // If policy not exists
+                return null;
+            }
+
             if($user->hasPermission(Helper::formatAbilityToPermission($arguments[0], $ability))) {
-                // if ability defined out of the policy
+                // if ability defined via policy
                 return true;
             } 
 
@@ -115,5 +120,5 @@ class ToolServiceProvider extends ServiceProvider
                 Helper::formatAbilityToPermission($arguments[0], $ability)
             )); 
         });
-    }
+    } 
 }
