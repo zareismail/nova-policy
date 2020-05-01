@@ -116,7 +116,7 @@ class ToolServiceProvider extends ServiceProvider
                 return false;
             }
 
-            return $this->hasPermission(Helper::formatOwnableAbility(
+            return $user->hasPermission(Helper::formatOwnableAbility(
                 Helper::formatAbilityToPermission($arguments[0], $ability)
             )); 
         });
