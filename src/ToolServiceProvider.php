@@ -101,8 +101,9 @@ class ToolServiceProvider extends ServiceProvider
                 return false;
             }
 
-            if($user->isNot($arguments[0]->owner)) {
-                // wrong owner
+            if(! is_null($arguments[0]->getKey()) && $user->isNot($arguments[0]->owner)) {
+                // If the model created and has the wrong owner  
+                // If the model was not created, we'll check permission for owner
                 return false;
             }
 
