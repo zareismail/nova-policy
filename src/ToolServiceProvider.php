@@ -3,9 +3,10 @@
 namespace Zareismail\NovaPolicy;
  
 use Illuminate\Support\ServiceProvider; 
-use Laravel\Nova\Nova as LaravelNova; 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
+use Laravel\Nova\Nova as LaravelNova; 
+use Zareismail\NovaPolicy\Contracts\Authenticator;
 
 class ToolServiceProvider extends ServiceProvider
 {
@@ -18,10 +19,12 @@ class ToolServiceProvider extends ServiceProvider
     { 
         if ($this->app->runningInConsole()) {
             $this->registerPublishing();
+            $this->loadMigrations();
         }
 
         LaravelNova::serving([$this, 'servingNova']);  
         $this->registerPolicies();
+        $this->registerAuthenticator();
     } 
 
     /**
@@ -48,11 +51,25 @@ class ToolServiceProvider extends ServiceProvider
 
         $this->publishes([
             __DIR__.'/../config/nova-policy.php' => config_path('nova-policy.php')
-        ], 'nova-policy.migration');
+        ], 'nova-policy.config');
     }
 
     /**
-     * Register NovaPolicy policies.
+     * Load the package's migrations.
+     *
+     * @return void
+     */
+    public function loadMigrations()
+    {
+        $this->app->booted(function($app) {
+            if(config('nova-policy.migrations', true)) {
+                $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+            }
+        });
+    }
+
+    /**
+     * Register the `NovaPolicy` policies.
      *
      * @return void
      */
@@ -60,66 +77,20 @@ class ToolServiceProvider extends ServiceProvider
     { 
         Gate::policy(PolicyRole::class, Policies\RolePolicy::class); 
 
-        Gate::before(function($user, $ability, $arguments = []) { 
-            if(boolval(config('nova-policy.ignore', false))) {
-                // Ignore managing access via configurations
-                return null;
-            }
-
-            if(method_exists($user, 'isDeveloper') && $user->isDeveloper()) {
-                // developer access
-                return true;
-            }
-
-            if($user->hasPermission(Helper::WILD_CARD_PERMISSION)) {
-                // wildcard access
-                return true;
-            }
-
-            if($user->hasPermission(Helper::NONE_PERMISSION)) {
-                // wildcard restriction
-                return false;
-            }
-
-            if(! isset($arguments[0]) || ! is_subclass_of($arguments[0], Model::class)) { 
-                // if ability defined out of the policy
-                return $user->hasPermission($ability);
-            }   
-
-            if(is_null(Gate::getPolicyFor($arguments[0]))) {
-                // If policy not exists
-                return null;
-            }
-
-            if($user->hasPermission(Helper::formatAbilityToPermission($arguments[0], $ability))) {
-                // if ability defined via policy
-                return true;
-            } 
-
-            if(! ($arguments[0] instanceof Contracts\Ownable)) {
-                // not ownable
-                return false;
-            }
-
-            if(! is_null($arguments[0]->getKey()) && $user->isNot($arguments[0]->owner)) {
-                // If the model created and has the wrong owner  
-                // If the model was not created, we'll check permission for owner
-                return false;
-            }
-
-            if($user->hasPermission(Helper::WILD_CARD_OWNABLE)) {
-                // wildcard ownable access
-                return true;
-            }
-
-            if($user->hasPermission(Helper::NONE_OWNABLE)) {
-                // wildcard ownable resriction 
-                return false;
-            }
-
-            return $user->hasPermission(Helper::formatOwnableAbility(
-                Helper::formatAbilityToPermission($arguments[0], $ability)
-            )); 
+        Gate::before(function($user, $ability, $arguments = []) {
+            return app(Authenticator::class)->authorize($user, $ability, $arguments);
         });
     } 
+
+    /**
+     * Register the `NovaPolicy` authenticator.
+     *
+     * @return void
+     */
+    public function registerAuthenticator()
+    {
+        $this->app->singleton(Authenticator::class, function($app) {
+            return new NovaPolicy($app);
+        });  
+    }
 }
