@@ -1,0 +1,22 @@
+{
+	"Role": "Role",
+	"Roles": "Roles",
+	"Permission": "Permission",
+	"Permissions": "Permissions", 
+	"Nova Policy": "Nova Policy",
+	"Role Name": "Role Name",
+	"Help Text": "Help Text",
+	"Resource Access": "Resource Access",
+	"Access to own resource": "Access to own resource",
+	"Custom Access": "Custom Access",
+	"Without Restriction": "Without Restriction",
+	"Be careful; a user without restriction can access to everything!": "Be careful; a user without restriction can access to everything!",
+	"Give the owner user permission to:": "Give the owner user permission to:",
+	"User can do these actions on own-created resources": "User can do these actions on own-created resources",
+	"Give each user ability to:": "Give each user ability to:",
+	"Restrictions On :resource": "Restrictions On :resource",
+	"Give each user permission to:": "Give each user permission to:",
+	"User can do these actions on each resource": "User can do these actions on each resource",
+	"Give the owner user permission to:": "Give the owner user permission to:",
+	"User can do these actions on own-created resources": "User can do these actions on own-created resources"
+}

@@ -25,6 +25,7 @@ class ToolServiceProvider extends ServiceProvider
         LaravelNova::serving([$this, 'servingNova']);  
         $this->registerPolicies();
         $this->registerAuthenticator();
+        $this->loadJsonTranslationsFrom(__DIR__.'/../resources/lang');
     } 
 
     /**
