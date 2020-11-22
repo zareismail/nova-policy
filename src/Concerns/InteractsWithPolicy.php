@@ -8,6 +8,12 @@ use Zareismail\NovaPolicy\PolicyRole;
 
 trait InteractsWithPolicy 
 {
+	/**
+	 * Determine if user has the given ability.
+	 * 
+	 * @param  string  $ability
+	 * @return boolean         
+	 */
 	public function hasPermission(string $ability) : bool
 	{
 		$this->relationLoaded('roles.permissions') || $this->load('roles.permissions');

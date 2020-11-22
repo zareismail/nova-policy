@@ -2,19 +2,14 @@
 
 namespace Zareismail\NovaPolicy\Nova;
  
-use Laravel\Nova\Http\Requests\NovaRequest;
-use Illuminate\Http\Request;  
-use Laravel\Nova\Fields\ID;
-use Laravel\Nova\Fields\Text;       
-use Laravel\Nova\Fields\Heading;       
-use Laravel\Nova\Fields\BooleanGroup;       
-use Laravel\Nova\Panel;       
-use Zareismail\RadioField\RadioButton;
 use Illuminate\Support\Str;
-use Laravel\Nova\Nova;
-use Zareismail\NovaPolicy\Helper; 
-use Zareismail\NovaPolicy\PolicyPermission; 
-use Zareismail\NovaPolicy\Contracts\Ownable; 
+use Illuminate\Http\Request;  
+use Laravel\Nova\Nova;    
+use Laravel\Nova\Panel;       
+use Laravel\Nova\Http\Requests\NovaRequest;
+use Laravel\Nova\Fields\{ID, Text, Select, Heading, BooleanGroup, BelongsToMany}; 
+use Armincms\Fields\Chain;  
+use Zareismail\NovaPolicy\{Helper, PolicyPermission, Contracts\Ownable};  
 
 abstract class Role extends Resource
 { 
@@ -41,14 +36,8 @@ abstract class Role extends Resource
      * @return array
      */
     public function fields(Request $request)
-    {  
-        $policies = Helper::policyInformation(); 
-
-        $ownables = $this->formatOwnables($policies->map->permissions->flatten(1)->where('ownable'));
-
-        $customToggle = $this->formatToggleKeys($policies->map->permissionKey);
-
-        return array_merge([
+    {    
+        return [
             ID::make()->sortable(),
 
             Text::make(__('Role Name'), 'name')
@@ -58,241 +47,255 @@ abstract class Role extends Resource
             Text::make(__('Help Text'), 'help')
                 ->nullable(),
 
-            RadioButton::make(__('Resource Access'), 'access')
-                ->options([
-                    'own' => __('Access to own resource'), 
-                    'custom' => __('Custom Access'), 
-                    'none' => __('Without Restriction'),
-                ])
-                ->required()
-                ->rules('required')
-                ->stack()
-                ->fillUsing([$this, 'fillPermissionsFromRequest'])
-                ->resolveUsing(function() use ($ownables) { 
-                    if(app(NovaRequest::class)->isCreateOrAttachRequest()) {
-                        return 'own';
-                    } 
+            Chain::make('levels', function() {
+                return [
+                    Select::make(__('Has Access To'), 'level')
+                        ->options([
+                            Helper::BLOCKED => __('Nothing'),
+                            Helper::OWNABLE => __('Some of the own-generated resources'),
+                            Helper::WILD_CARD_OWNABLE => __('All of the own-generated resources'),
+                            Helper::WILD_CARD_PARTIAL => __('Some of the generated resources'), 
+                            Helper::ACTION => __('Some of the available actions'), 
+                            Helper::PERMITTED => __('Somethings'),
+                            Helper::WILD_CARD => __('Everything'),
+                        ])
+                        ->resolveUsing(function($value, $resource, $attribute) { 
+                            if(is_null($resource->permissions) ||
+                               $resource->permissions->isEmpty() || 
+                               $resource->permissions->isBlocked()
+                            ){
+                                return Helper::BLOCKED;
+                            }
 
-                    $ownablePermissions = $this->permissions->whereIn(
-                        'name', $ownables->keys()->push(Helper::NONE_OWNABLE)->all()
-                    );
+                            if($resource->permissions->isWildcardOwnable()) {
+                                return Helper::WILD_CARD_OWNABLE;
+                            }
 
-                    if($ownablePermissions->count() > 0) {
-                        return 'own';
-                    }
+                            if($resource->permissions->isWildcard()) {
+                                return Helper::WILD_CARD;
+                            } 
 
-                    return $this->permissions->where('name', Helper::WILD_CARD_PERMISSION)->count() ? 'none' : 'custom';
-                }) 
-                ->help(__("Be careful; a user without restriction can access to everything!"))
-                ->toggle([
-                    'own' => $customToggle->all(),
-                    'none'=> $customToggle->push('own')->push('abilities')->all(),
-                    'custom' =>  ['own'],
-                ]),
+                            if($resource->permissions->isAction()) {
+                                return Helper::ACTION;
+                            }
 
-            $this->when($ownables->count(), function() use ($ownables) {
-                return BooleanGroup::make(__('Give the owner user permission to:'), 'own')   
-                            ->options($ownables)
-                            ->fillUsing([$this, 'withoutFillUsing'])
-                            ->resolveUsing([$this, 'booleanGroupResolveUsing'])
-                            ->canSee(function($request) use ($ownables) {
-                                $permissions = optional($this->resource)->permissions;
+                            if($resource->permissions->isOwnable()) {
+                                return Helper::OWNABLE;
+                            } 
 
-                                if($request->editing || is_null($permissions)) {
-                                    return true;
-                                }  
+                            if($resource->permissions->isPartial()) {
+                                return Helper::WILD_CARD_PARTIAL;
+                            } 
 
-                                return $permissions->whereIn(
-                                    'name', $ownables->keys()->push(Helper::NONE_OWNABLE)->all()
-                                )->count() > 0;
-                            })
-                            ->help(__('User can do these actions on own-created resources'))
-                            ->hideFromIndex();
-            }),  
+                            return Helper::PERMITTED; 
+                        })
+                        ->fillUsing(function($request, $model, $attribute, $requestAttribute) {
+                            $model::saved(function($model) use ($request) {
+                                $model->syncPermissions((array) $this->fetchTheLevelPermissions(
+                                    $request, $request->get('level')
+                                )); 
+                            });
+                        })
+                ];
+            }), 
 
-            BooleanGroup::make(__("Give each user ability to:"), 'abilities')
-                ->options(Helper::abilities())
-                ->fillUsing([$this, 'withoutFillUsing'])
-                ->resolveUsing([$this, 'booleanGroupResolveUsing'])
-                ->hideFromIndex()
-                ->canSee(function($request) {
-                    $permissions = optional($this->resource)->permissions;
+            Chain::with('levels', function($request) {
+                switch ($request->get('level')) {
+                    case Helper::BLOCKED:
+                        $help = __('The user will be out of access to any things.');
+                        break;
 
-                    if(count(Helper::abilities()) === 0) {
-                        return false;
-                    }
+                    case Helper::WILD_CARD_OWNABLE:
+                        $help = __('Be careful; With this permission, the user can take any action regarding their generated resources.');
+                        break;
 
-                    if($request->editing || is_null($permissions)) {
-                        return true;
-                    } 
+                    case Helper::OWNABLE:
+                        $help = __('Be careful on select the following; this allows the user to take any action regarding their generated resources.');
+                        break;
 
-                    return is_null($permissions->where('name', Helper::WILD_CARD_PERMISSION)->first());
-                }),
-                
-        ], $policies->map([$this, 'permissionFields'])->values()->toArray());
-    }    
+                    case Helper::WILD_CARD:
+                        $help = __('Warning! this allows user to do anything.');
+                        break;
 
-    public function permissionFields($policy, $model)
-    { 
-        $ownables = is_subclass_of($model, Ownable::class) && collect($policy['permissions'])->where('ownable')->count();
+                    case Helper::ACTION:
+                        $help = __('Be careful; This allows the user to take selective action on the any resource.');
+                        break;
 
-        $permissions = collect($policy['permissions'])->map(function($permission) use ($policy) { 
-            $ability = Helper::formatStringsToAbility([
-                $policy['permissionKey'], $permission['name']
-            ]);
+                    case Helper::WILD_CARD_PARTIAL:
+                        $help = __('Watch out; this allows the user to take any action regarding to the selected resources.');
+                        break;
 
-            return [
-                'name' => Str::title(Str::snake($permission['name'], ' ')),
-                'custom' => $ability,
-                'ownable' => $permission['ownable'] ? Helper::formatOwnableAbility($ability) : null, 
-            ];
-        });
-
-        return new Panel(__('Restrictions On :resource', ['resource' => $policy['label']]), [    
-            BooleanGroup::make(__("Give each user permission to:"), "{$policy['permissionKey']}-custom")
-                ->options($permissions->pluck('name', 'custom')->all())
-                ->fillUsing([$this, 'withoutFillUsing'])
-                ->resolveUsing([$this, 'booleanGroupResolveUsing'])
-                ->help(__('User can do these actions on each resource'))
-                ->hideFromIndex(),
-                
-            $this->when($ownables, function() use ($policy, $permissions) {
-                return BooleanGroup::make(__('Give the owner user permission to:'), "{$policy['permissionKey']}-own")
-                            ->options($permissions->whereNotNull('ownable')->pluck('name', 'ownable')->all())
-                            ->fillUsing([$this, 'withoutFillUsing'])
-                            ->resolveUsing([$this, 'booleanGroupResolveUsing'])
-                            ->help(__('User can do these actions on own-created resources'))
-                            ->hideFromIndex();
+                    case Helper::PERMITTED:
+                        $help = __('So good, you can fully customize the user accesses.');
+                        break;
+                    
+                    default:
+                        return [];
+                        break;
+                }
+                return [
+                    Heading::make($help),
+                ];
             }),
 
-        ]);
-    }
+            Chain::with('levels', function($request) { 
+                switch ($request->get('level')) {
+                    case Helper::ACTION:
+                        return static::actions($request);
+                        break; 
 
-    public function booleanGroupResolveUsing($value, $resource, $attribute)
-    {
-        return $resource->permissions->mapWithKeys(function($permission) {
-            return [$permission->name => true];
-        })->all();
-    }
+                    case Helper::OWNABLE:
+                        return static::ownableResources($request);
+                        break; 
 
-    public function withoutFillUsing()
-    {
-        
-    }
+                    case Helper::WILD_CARD_PARTIAL:
+                        return static::resources($request);
+                        break; 
 
-    public function formatToggleKeys($permissionKeys)
-    {
-        return collect($permissionKeys)->flatMap(function($attribute) {
-            return [
-                $attribute, 
-                "{$attribute}-own",
-                "{$attribute}-custom",
-            ];
-        })->values();
-    }
+                    case Helper::PERMITTED:
+                        return static::abilities($request);
+                        break; 
+                    
+                    default:
+                        return [];
+                        break;
+                }
+            }),
+        ];
+    }    
 
-    public function formatOwnables($permissions)
-    {
-        return collect($permissions)->mapWithKeys(function($permission) {
-            return [
-                Helper::formatOwnableAbility($permission['name']) => $permission['name']
-            ];
-        });
-    }
+    /**
+     * Get the permisison from the request with the given level.
+     * 
+     * @param  \Illuminate\Http\Request $request
+     * @param  string  $level  
+     * @return array          
+     */
+    public function fetchTheLevelPermissions(Request $request, string $level)
+    {    
+        switch ($level) {
+            case Helper::BLOCKED:
+            case Helper::WILD_CARD:
+            case Helper::WILD_CARD_OWNABLE:
+                return $level;
+                break; 
+ 
+            case Helper::PERMITTED:
+                return collect($request->get('permissions'))->flatMap(function($permissions) {
+                    return array_keys(array_filter(json_decode($permissions, true)));
+                })->values()->all(); 
+                break; 
 
-    public function fillPermissionsFromRequest($request, $model, $attribute, $requestAttribute)
-    { 
-        $model->saved(function($model) use ($request) {
-            $abilities = [
-                // without permission selection; all permissions will be restricted
-                Helper::NONE_PERMISSION
-            ]; 
-
-            switch ($request->get('access')) {
-                case 'own':
-                    $abilities = $this->fetchOwnPermissionsFromRequest($request);
-                    break;
-                case 'none':
-                    $abilities = [Helper::WILD_CARD_PERMISSION];
-                    break;
-                case 'custom':
-                    $abilities = $this->fetchCustomPermissionsFromRequest($request);
-                    break;
-                
-                default: 
-                    break;
-            } 
-
-            $abilities = array_merge($abilities, $this->fetchAbilitiesFromRequest($request));
-
-            $authorizedPermissions = $this->filterAuthorizedPermissions( 
-                $request, $this->findPermissions($abilities)
-            );
-
-            $model->permissions()->sync( 
-                $authorizedPermissions->modelKeys() 
-            ); 
-        }); 
-    }
-
-    public function fetchAbilitiesFromRequest(Request $request)
-    {
-        return collect(json_decode($request->get('abilities', []), true))->filter()->keys()->all();
-    }
-
-    public function fetchOwnPermissionsFromRequest(Request $request)
-    {
-        $permissions = collect(json_decode($request->get('own', []), true)); 
-
-        switch ($permissions->filter()->count()) { 
-            case 0:
-                return [Helper::NONE_OWNABLE];
-                break;
-
-            case $permissions->count():
-                return [Helper::WILD_CARD_OWNABLE];
-                break;
-            
             default:
-                return $permissions->filter()->keys()->toArray();
+                return [];
                 break;
         } 
     }
 
-    public function fetchCustomPermissionsFromRequest(Request $request)
+    /**
+     * Get the actions selection field.
+     * 
+     * @param  \Illuminate\Http\Request $request 
+     * @return array           
+     */
+    public function actions(Request $request)
     {
-        return Helper::policyInformation()->map->permissionKey->flatMap(function($key) use ($request) { 
-            $permissions = array_merge(
-                (array) json_decode($request->get("{$key}-custom"), true),
-                (array) json_decode($request->get("{$key}-own"), true)
-            ); 
-
-            return collect($permissions)->filter()->keys();
-        })->toArray(); 
+        return [
+            BooleanGroup::make(__('Can'), 'permissions')
+                ->options(collect(Helper::actions())->mapWithKeys(function($action) {  
+                    return [
+                        $action => __(Str::replaceArray('.'.Helper::OWNABLE, [' [own genereated]'], $action). ' resources'),
+                    ];
+                }))
+                ->fillUsing([$this, 'fillUPermissions'])
+                ->resolveUsing([$this, 'resolvePermisisons']),
+        ]; 
     } 
 
-    public function findPermissions(array $abilities)
+    /**
+     * Get the ownable resource selection field.
+     * 
+     * @param  \Illuminate\Http\Request $request 
+     * @return array           
+     */
+    public function ownableResources(Request $request)
     {
-        $this->ensurePermissions($abilities);
+        return [
+            BooleanGroup::make(__('Owner Has Access To'), 'permissions')
+                ->options(collect(Helper::ownableResources())->pluck('label', 'key'))
+                ->fillUsing([$this, 'fillUPermissions'])
+                ->resolveUsing([$this, 'resolvePermisisons']),
+        ]; 
+    } 
 
-        return PolicyPermission::whereIn('name', $abilities)->get(); 
+    /**
+     * Get the resource selection field.
+     * 
+     * @param  \Illuminate\Http\Request $request 
+     * @return array           
+     */
+    public function resources(Request $request)
+    {
+        return [
+            BooleanGroup::make(__('Access To All'), 'permissions')
+                ->options(collect(Helper::wildcardPartialResources())->pluck('label', 'key'))
+                ->fillUsing([$this, 'fillUPermissions'])
+                ->resolveUsing([$this, 'resolvePermisisons']),
+        ]; 
+    } 
+
+    /**
+     * Get the ability selection field.
+     * 
+     * @param  \Illuminate\Http\Request $request 
+     * @return array           
+     */
+    public function abilities()
+    {
+        return collect(Helper::groupedAbilities())->flatMap(function($group) {
+            return [ 
+                BooleanGroup::make(__($group['group']), "permissions[{$group['key']}]")
+                    ->options(collect($group['abilities'])->pluck('label', 'key'))
+                    ->help(__('User can take this actions on the :group', ['group' => $group['group']]))
+                    ->fillUsing(function() { })
+                    ->resolveUsing([$this, 'resolvePermisisons']),
+            ];
+        })->all();
     }
 
-    public function ensurePermissions(array $permissions)
-    {  
-        $remainingPermissions = collect($permissions)->diff(PolicyPermission::get()->map->name);
-
-        if($remainingPermissions->isNotEmpty()) {
-            PolicyPermission::insert($remainingPermissions->map(function($name) {
-                return compact('name');
-            })->all());
-        }
-    }
-
-    public function filterAuthorizedPermissions($request, $permissions)
+    /**
+     * Fillmodel with the permissions.
+     * 
+     * @param mixed $value     
+     * @param mixed  $resource  
+     * @param string  $attribute
+     *  
+     * @return  array           
+     */
+    public function fillUPermissions($request, $model, $attribute, $requestAttribute)
     {
-        return $permissions->filter(function ($model) use ($request) {
-            return $this->authorizedToAttach($request, $model);
+        $model::saved(function($model) use ($request) {
+            $model->syncPermissions(array_keys(array_filter(json_decode(
+                $request->get('permissions', '[]'), true
+            )))); 
         });
+    }
+
+    /**
+     * Resolve the permission via true false value.
+     * 
+     * @param mixed $value     
+     * @param mixed  $resource  
+     * @param string  $attribute
+     *  
+     * @return  array           
+     */
+    public function resolvePermisisons($value, $resource, $attribute)
+    {
+        if($permissions = $this->resource->permissions) {
+            return $permissions->keyBy('name')->map(function($permission) {
+                return boolval($permission->id);
+            })->all(); 
+        }
     }
 }

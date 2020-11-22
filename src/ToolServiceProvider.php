@@ -5,8 +5,7 @@ namespace Zareismail\NovaPolicy;
 use Illuminate\Support\ServiceProvider; 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Gate;
-use Laravel\Nova\Nova as LaravelNova; 
-use Zareismail\NovaPolicy\Contracts\Authenticator;
+use Laravel\Nova\Nova as LaravelNova;  
 
 class ToolServiceProvider extends ServiceProvider
 {
@@ -23,7 +22,7 @@ class ToolServiceProvider extends ServiceProvider
         }
 
         LaravelNova::serving([$this, 'servingNova']);  
-        $this->registerPolicies();
+        $this->registerPolicies(); 
         $this->registerAuthenticator();
         $this->loadJsonTranslationsFrom(__DIR__.'/../resources/lang');
     } 
@@ -79,7 +78,7 @@ class ToolServiceProvider extends ServiceProvider
         Gate::policy(PolicyRole::class, Policies\RolePolicy::class); 
 
         Gate::before(function($user, $ability, $arguments = []) {
-            return app(Authenticator::class)->authorize($user, $ability, $arguments);
+            return app(Contracts\Authenticator::class)->authorize($user, $ability, $arguments);
         });
     } 
 
@@ -90,8 +89,8 @@ class ToolServiceProvider extends ServiceProvider
      */
     public function registerAuthenticator()
     {
-        $this->app->singleton(Authenticator::class, function($app) {
+        $this->app->singleton(Contracts\Authenticator::class, function($app) {
             return new NovaPolicy($app);
         });  
-    }
+    } 
 }

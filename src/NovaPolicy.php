@@ -49,14 +49,14 @@ class NovaPolicy implements Authenticator
             return true;
         }
 
-        if($user->hasPermission(Helper::WILD_CARD_PERMISSION)) {
-            // wildcard access
-            return true;
-        }
-
-        if($user->hasPermission(Helper::NONE_PERMISSION)) {
+        if($user->hasPermission(Helper::BLOCKED)) {
             // wildcard restriction
             return false;
+        }
+
+        if($user->hasPermission(Helper::WILD_CARD)) {
+            // wildcard access
+            return true;
         }
 
         if(! isset($arguments[0]) || ! is_subclass_of($arguments[0], Model::class)) { 
@@ -69,34 +69,52 @@ class NovaPolicy implements Authenticator
             return null;
         }
 
-        if($user->hasPermission(Helper::formatAbilityToPermission($arguments[0], $ability))) {
-            // if ability defined via policy
+        // check global action ability 
+        if($user->hasPermission($ability)) {
+            // if has wildcard ability on the model
             return true;
         } 
 
-        if(! ($arguments[0] instanceof Ownable)) {
+        if($user->hasPermission(Helper::formatPartialAbility($arguments[0]))) {
+            // if has wildcard ability on the model
+            return true;
+        } 
+
+        if($user->hasPermission(Helper::formatAbility($arguments[0], $ability))) {
+            // if ability defined via policy
+            return true;
+        }  
+
+        if(! Helper::isOwnable($arguments[0])) {
             // not ownable
             return false;
-        }
+        } 
 
-        if(! is_null($arguments[0]->getKey()) && $user->isNot($arguments[0]->owner)) {
-            // If the model created and has the wrong owner  
-            // If the model was not created, we'll check permission for owner
+        if( ! Helper::isWithoutModelAbility($arguments[0], $ability) && 
+            $user->isNot(optional($arguments[0])->owner)
+        ){
+            // If the model created and has the wrong owner   
             return false;
         }
 
         if($user->hasPermission(Helper::WILD_CARD_OWNABLE)) {
             // wildcard ownable access
             return true;
-        }
+        } 
 
-        if($user->hasPermission(Helper::NONE_OWNABLE)) {
+        // check global ownable action ability 
+        if($user->hasPermission(Helper::formatAbilityOwner($ability))) {
+            // if has wildcard ability on the model
+            return true;
+        }  
+
+        if($user->hasPermission(Helper::formatOwnableAbility($arguments[0]))) {
             // wildcard ownable resriction 
-            return false;
-        }
-
-        return $user->hasPermission(Helper::formatOwnableAbility(
-            Helper::formatAbilityToPermission($arguments[0], $ability)
+            return true;
+        }  
+ 
+        return $user->hasPermission(Helper::formatAbility(
+            $arguments[0], Helper::formatAbilityOwner($ability)
         )); 
     }
 }

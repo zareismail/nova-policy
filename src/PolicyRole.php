@@ -16,8 +16,26 @@ class PolicyRole extends Model
      */
     public $timestamps = false;
 
+    /**
+     * Query the related permissions.
+     * 
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
 	public function permissions()
-	{
+	{ 
 		return $this->belongsToMany(PolicyPermission::class, 'policy_permission_role');
 	}
+
+    /**
+     * Sync the model with the given permissions.
+     * 
+     * @param  array  $permissions 
+     * @return $this              
+     */
+    public function syncPermissions(array $permissions = [])
+    {  
+        $this->permissions()->sync(PolicyPermission::sync($permissions));
+
+        return $this;
+    } 
 }
