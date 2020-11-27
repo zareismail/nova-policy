@@ -23,7 +23,8 @@ class PolicyRole extends Model
      */
 	public function permissions()
 	{ 
-		return $this->belongsToMany(PolicyPermission::class, 'policy_permission_role');
+		return $this->belongsToMany(PolicyPermission::class, 'policy_permission_role')
+                    ->using(PolicyPermissionRole::class);
 	}
 
     /**

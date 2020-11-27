@@ -21,9 +21,11 @@ class ToolServiceProvider extends ServiceProvider
             $this->loadMigrations();
         }
 
-        LaravelNova::serving([$this, 'servingNova']);  
-        $this->registerPolicies(); 
+        $this->registerEvents();  
+        $this->registerPolicies();  
+        $this->registerRepository();
         $this->registerAuthenticator();
+        LaravelNova::serving([$this, 'servingNova']);  
         $this->loadJsonTranslationsFrom(__DIR__.'/../resources/lang');
     } 
 
@@ -69,6 +71,28 @@ class ToolServiceProvider extends ServiceProvider
     }
 
     /**
+     * Register the Auth models review events.
+     *
+     * @return void
+     */
+    public function registerEvents()
+    { 
+        $this->app->booted(function() {
+            collect(config('auth.providers'))->each(function($provider) {
+                $model = data_get($provider, 'model'); 
+
+                if(isset($model) && method_exists($model, 'saved')) {
+                    $model::saved(function($model = null) {
+                        if($model instanceof \Illuminate\Contracts\Auth\Authenticatable) {
+                            app(Contracts\Repository::class)->review($model);
+                        }
+                    });
+                }
+            });
+        });
+    }
+
+    /**
      * Register the `NovaPolicy` policies.
      *
      * @return void
@@ -80,7 +104,7 @@ class ToolServiceProvider extends ServiceProvider
         Gate::before(function($user, $ability, $arguments = []) {
             return app(Contracts\Authenticator::class)->authorize($user, $ability, $arguments);
         });
-    } 
+    }  
 
     /**
      * Register the `NovaPolicy` authenticator.
@@ -90,7 +114,19 @@ class ToolServiceProvider extends ServiceProvider
     public function registerAuthenticator()
     {
         $this->app->singleton(Contracts\Authenticator::class, function($app) {
-            return new NovaPolicy($app);
+            return new NovaPolicy($app[Contracts\Repository::class]);
+        });  
+    } 
+
+    /**
+     * Register the `NovaPolicy` repository.
+     *
+     * @return void
+     */
+    public function registerRepository()
+    {
+        $this->app->singleton(Contracts\Repository::class, function($app) {
+            return new Repository($app);
         });  
     } 
 }

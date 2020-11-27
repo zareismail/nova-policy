@@ -184,6 +184,17 @@ class Helper
     } 
 
     /**
+     * Detect if the given class uses InteractsWithPolicy.
+     * 
+     * @param  mixed $model 
+     * @return boolean        
+     */
+    public static function isAuthorizable($model) : bool
+    {  
+        return in_array(Concerns\InteractsWithPolicy::class, class_uses_recursive($model));
+    } 
+
+    /**
      * Get the model label.
      * 
      * @param  string $model 

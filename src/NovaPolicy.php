@@ -5,26 +5,27 @@ namespace Zareismail\NovaPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Zareismail\NovaPolicy\Contracts\{Authenticator, Ownable};
+use Illuminate\Contracts\Auth\Authenticatable;
+use Zareismail\NovaPolicy\Contracts\{Authenticator, Ownable, Repository};
  
 class NovaPolicy implements Authenticator
 {  
     /**
      * The application instance.
      *
-     * @var \Illuminate\Contracts\Container\Container
+     * @var \Zareismail\NovaPolicy\Contracts\Repository
      */
-    protected $app;
+    protected $repository;
 
     /**
      * Create a new authenticator instance.
      *
-     * @param  \Illuminate\Contracts\Container\Container  $app
+     * @param  \Zareismail\NovaPolicy\Contracts\Repository  $repository
      * @return void
      */
-    public function __construct($app)
+    public function __construct(Repository $repository)
     {
-        $this->app = $app;
+        $this->repository = $repository;
     }
 
     /**
@@ -47,21 +48,21 @@ class NovaPolicy implements Authenticator
         if(method_exists($user, 'isDeveloper') && $user->isDeveloper()) {
             // developer access
             return true;
-        }
+        }  
 
-        if($user->hasPermission(Helper::BLOCKED)) {
+        if($this->forUser($user)->has(Helper::BLOCKED)) {
             // wildcard restriction
             return false;
         }
 
-        if($user->hasPermission(Helper::WILD_CARD)) {
+        if($this->forUser($user)->has(Helper::WILD_CARD)) {
             // wildcard access
             return true;
         }
 
         if(! isset($arguments[0]) || ! is_subclass_of($arguments[0], Model::class)) { 
             // if ability defined out of the policy
-            return $user->hasPermission($ability);
+            return $this->forUser($user)->has($ability);
         }   
 
         if(is_null(Gate::getPolicyFor($arguments[0]))) {
@@ -70,17 +71,17 @@ class NovaPolicy implements Authenticator
         }
 
         // check global action ability 
-        if($user->hasPermission($ability)) {
+        if($this->forUser($user)->has($ability)) {
             // if has wildcard ability on the model
             return true;
         } 
 
-        if($user->hasPermission(Helper::formatPartialAbility($arguments[0]))) {
+        if($this->forUser($user)->has(Helper::formatPartialAbility($arguments[0]))) {
             // if has wildcard ability on the model
             return true;
         } 
 
-        if($user->hasPermission(Helper::formatAbility($arguments[0], $ability))) {
+        if($this->forUser($user)->has(Helper::formatAbility($arguments[0], $ability))) {
             // if ability defined via policy
             return true;
         }  
@@ -97,24 +98,35 @@ class NovaPolicy implements Authenticator
             return false;
         }
 
-        if($user->hasPermission(Helper::WILD_CARD_OWNABLE)) {
+        if($this->forUser($user)->has(Helper::WILD_CARD_OWNABLE)) {
             // wildcard ownable access
             return true;
         } 
 
         // check global ownable action ability 
-        if($user->hasPermission(Helper::formatAbilityOwner($ability))) {
+        if($this->forUser($user)->has(Helper::formatAbilityOwner($ability))) {
             // if has wildcard ability on the model
             return true;
         }  
 
-        if($user->hasPermission(Helper::formatOwnableAbility($arguments[0]))) {
+        if($this->forUser($user)->has(Helper::formatOwnableAbility($arguments[0]))) {
             // wildcard ownable resriction 
             return true;
         }  
  
-        return $user->hasPermission(Helper::formatAbility(
+        return $this->forUser($user)->has(Helper::formatAbility(
             $arguments[0], Helper::formatAbilityOwner($ability)
         )); 
+    }
+
+    /**
+     * Get the permission repository for the given user.
+     * 
+     * @param  \Illuminate\Contracts\Auth\Authenticatable $user 
+     * @return \Zareismail\NovaPolicy\Contracts\Repository             
+     */
+    public function forUser(Authenticatable $user)
+    {
+        return $this->repository->for($user);
     }
 }

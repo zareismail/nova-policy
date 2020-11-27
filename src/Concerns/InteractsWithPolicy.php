@@ -2,37 +2,34 @@
 
 namespace Zareismail\NovaPolicy\Concerns;
 
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Zareismail\NovaPolicy\PolicyUserPermission;
 use Zareismail\NovaPolicy\PolicyPermission;
+use Zareismail\NovaPolicy\PolicyUserRole;
 use Zareismail\NovaPolicy\PolicyRole;
 
 
 trait InteractsWithPolicy 
-{
+{ 
 	/**
-	 * Determine if user has the given ability.
+	 * Query the related Permission`s.
 	 * 
-	 * @param  string  $ability
-	 * @return boolean         
+	 * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
 	 */
-	public function hasPermission(string $ability) : bool
+	public function permissions(): BelongsToMany
 	{
-		$this->relationLoaded('roles.permissions') || $this->load('roles.permissions');
-		$this->relationLoaded('permissions') || $this->load('permissions');
+		return $this->morphToMany(PolicyPermission::class, 'user', 'policy_user_permission', 'user_id')
+					->using(PolicyUserPermission::class);
+	} 
 
-		$permissions = $this->roles->flatMap->permissions->map->name->merge(
-			$this->permissions->map->name
-		); 
-
-		return $permissions->contains($ability);
-	}
-
-	public function permissions()
+	/**
+	 * Query the related Permission`s.
+	 * 
+	 * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+	 */
+	public function roles(): BelongsToMany
 	{
-		return $this->belongsToMany(PolicyPermission::class, 'policy_user_permission', 'user_id');
-	}
-
-	public function roles()
-	{
-		return $this->belongsToMany(PolicyRole::class, 'policy_user_role', 'user_id');
+		return $this->morphToMany(PolicyRole::class, 'user', 'policy_user_role', 'user_id')
+					->using(PolicyUserRole::class);
 	}
 }
