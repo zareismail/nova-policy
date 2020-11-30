@@ -117,7 +117,7 @@ class Repository implements RepositoryContracts
      * @param  \Illuminate\Contracts\Auth\Authenticatable  $user 
      * @return $this
      */
-    public function review(Authenticatable $user): self
+    public function review(Authenticatable $user)
     {
         $this->app['cache']->forget($this->cacheKey($user));
 

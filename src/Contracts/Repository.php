@@ -29,5 +29,5 @@ interface Repository
      * @param  \Illuminate\Contracts\Auth\Authenticatable  $user 
      * @return $this
      */
-    public function review(Authenticatable $user): self;
+    public function review(Authenticatable $user);
 }
