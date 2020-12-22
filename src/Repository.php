@@ -132,6 +132,6 @@ class Repository implements RepositoryContracts
      */
     public function cacheKey(Authenticatable $user): string
     { 
-        return md5(static::class.$user);
+        return md5(get_called_class().get_class($user).$user->getAuthIdentifier());
     }
 }
