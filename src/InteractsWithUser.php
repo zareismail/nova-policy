@@ -53,7 +53,7 @@ trait InteractsWithUser
      */
     public function flushCache()
     {
-        app(Contracts\Repository::class)->review($this->user ?? $this->user()->first());
+        app(Contracts\Repository::class)->review($this->user ?? $this->user()->firstONew());
 
         return $this;
     }
