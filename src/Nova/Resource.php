@@ -37,4 +37,25 @@ abstract class Resource extends NovaResource
      * @return array
      */
     abstract public function fields(Request $request); 
+
+    /**
+     * Determine if the resource should be available for the given request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return bool
+     */
+    public function authorizeToViewAny(Request $request)
+    { 
+    }
+
+    /**
+     * Determine if the resource should be available for the given request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return bool
+     */
+    public static function authorizedToViewAny(Request $request)
+    {
+        return true;
+    }
 }
