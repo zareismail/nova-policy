@@ -53,9 +53,11 @@ trait InteractsWithUser
      */
     public function flushCache()
     {
-        if(! is_null($this->user)) {
+        $this->loadMissing('user');
+
+        if(! is_null($this->getRelation('user'))) {
             app(Contracts\Repository::class)->review($this->user);
-        } 
+        }
 
         return $this;
     }
