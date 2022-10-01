@@ -1,11 +1,11 @@
-<?php 
+<?php
 
 namespace Zareismail\NovaPolicy;
 
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
-use Laravel\Nova\Nova; 
- 
+use Laravel\Nova\Nova;
+
 class Helper
 {
     /**
@@ -20,7 +20,7 @@ class Helper
      * 
      * @param  string
      */
-    public const OWNABLE = 'owner';   
+    public const OWNABLE = 'owner';
 
     /**
      * Permitted abilities identifier.
@@ -28,7 +28,7 @@ class Helper
      * @param  string
      */
     public const PERMITTED = 'permitted';
-    
+
     /**
      * Action ability string.
      * 
@@ -48,14 +48,14 @@ class Helper
      * 
      * @param  string
      */
-    public const WILD_CARD_PARTIAL = 'partial'; 
+    public const WILD_CARD_PARTIAL = 'partial';
 
     /**
      * Wild card ownable ability string.
      * 
      * @param  string
      */
-    public const WILD_CARD_OWNABLE = 'own';   
+    public const WILD_CARD_OWNABLE = 'own';
 
     /**
      * Get the available resources for the authorization.
@@ -64,15 +64,15 @@ class Helper
      */
     public static function resources()
     {
-        return collect(Gate::policies())->map(function($policy, $model) {    
+        return collect(Gate::policies())->map(function ($policy, $model) {
             return [
                 'key' => Str::kebab(class_basename($model)),
                 'model' => $model,
                 'label' => static::modelLabel($model),
-                'ownable' => static::isOwnable($model), 
-            ]; 
+                'ownable' => static::isOwnable($model),
+            ];
         })->filter()->values()->sortBy('label')->all();
-    } 
+    }
 
     /**
      * Get the available ownable resources.
@@ -81,12 +81,12 @@ class Helper
      */
     public static function ownableResources()
     {
-        return collect(static::resources())->where('ownable', true)->map(function($resource) {
+        return collect(static::resources())->where('ownable', true)->map(function ($resource) {
             return array_merge($resource, [
                 'key' => static::formatOwnableAbility($resource['model']),
             ]);
         });
-    } 
+    }
 
     /**
      * Get the available resources for the partial authorization.
@@ -95,12 +95,12 @@ class Helper
      */
     public static function wildcardPartialResources()
     {
-        return collect(static::resources())->map(function($resource) {
+        return collect(static::resources())->map(function ($resource) {
             return array_merge($resource, [
                 'key' => static::formatPartialAbility($resource['model']),
             ]);
         });
-    } 
+    }
 
     /**
      * Get the available actions for authorization.
@@ -110,8 +110,8 @@ class Helper
     public static function actions()
     {
         return collect(Gate::policies())
-                    ->flatMap([static::class, 'policyAbilities'])
-                    ->unique()->values()->sortDesc()->all();
+            ->flatMap([static::class, 'policyAbilities'])
+            ->unique()->values()->sortDesc()->all();
     }
 
     /** 
@@ -121,19 +121,19 @@ class Helper
      */
     public static function groupedAbilities()
     {
-        return collect(Gate::policies())->map(function($policy, $model) { 
+        return collect(Gate::policies())->map(function ($policy, $model) {
             return [
-                'key' => Str::kebab(class_basename($model)), 
-                'group' => static::modelLabel($model), 
-                'abilities' => static::policyAbilities($policy, $model)->map(function($ability) use ($model) {
+                'key' => Str::kebab(class_basename($model)),
+                'group' => static::modelLabel($model),
+                'abilities' => static::policyAbilities($policy, $model)->map(function ($ability) use ($model) {
                     return [
                         'key' => static::formatAbility($model, $ability),
-                        'label' => static::abilityLabel($ability), 
+                        'label' => static::abilityLabel($ability),
                     ];
                 }),
             ];
         })->sortBy('group')->prepend(static::definedAbilities())->all();
-    } 
+    }
 
     /**
      * Get globaly defined abilities.
@@ -141,17 +141,17 @@ class Helper
      * @return array
      */
     public static function definedAbilities()
-    { 
+    {
         return [
             'key' => 'abilities',
-            'group' => __('Other abilities'), 
-            'abilities' => collect(Gate::abilities())->keys()->map(function($ability) {
+            'group' => __('Other abilities'),
+            'abilities' => collect(Gate::abilities())->keys()->map(function ($ability) {
                 return [
                     'key' => $ability,
                     'label' => static::abilityLabel($ability)
                 ];
             })->all()
-        ]; 
+        ];
     }
 
     /**
@@ -163,14 +163,14 @@ class Helper
      */
     public static function policyAbilities($policy, $model)
     {
-        return collect(static::publicMethods($policy))->flatMap(function($method) use ($model) {
+        return collect(static::publicMethods($policy))->flatMap(function ($method) use ($model) {
             return array_filter([
-                $method->name, 
-                static::isOwnable($model) && $method->getNumberOfParameters() > 1 
-                    ? static::formatAbilityOwner($method->name) : null 
+                $method->name,
+                static::isOwnable($model) && $method->getNumberOfParameters() > 1
+                    ? static::formatAbilityOwner($method->name) : null
             ]);
         })->values()->unique()->sortDesc();
-    } 
+    }
 
     /**
      * Detect if the given class implements Ownable.
@@ -179,9 +179,9 @@ class Helper
      * @return boolean        
      */
     public static function isOwnable($model)
-    { 
+    {
         return collect(class_implements($model))->contains(Contracts\Ownable::class);
-    } 
+    }
 
     /**
      * Detect if the given class uses InteractsWithPolicy.
@@ -189,10 +189,10 @@ class Helper
      * @param  mixed $model 
      * @return boolean        
      */
-    public static function isAuthorizable($model) : bool
-    {  
+    public static function isAuthorizable($model): bool
+    {
         return in_array(Concerns\InteractsWithPolicy::class, class_uses_recursive($model));
-    } 
+    }
 
     /**
      * Get the model label.
@@ -202,11 +202,11 @@ class Helper
      */
     public static function modelLabel($model)
     {
-    	if($resourceClass = Nova::resourceForModel($model)) {
-    		return $resourceClass::label();
-    	}
+        if ($resourceClass = Nova::resourceForModel($model)) {
+            return $resourceClass::label();
+        }
 
-    	return Str::plural(Str::title(Str::snake(class_basename($model), ' ')));
+        return Str::plural(Str::title(Str::snake(class_basename($model), ' ')));
     }
 
     /**
@@ -216,9 +216,9 @@ class Helper
      * @return string         
      */
     public static function abilityLabel($ability)
-    {  
+    {
         return Str::snake(Str::replaceArray(static::OWNABLE, [' [own genereated resource]'], $ability), ' ');
-    } 
+    }
 
     /**
      * Get the class public methods.
@@ -229,7 +229,7 @@ class Helper
     public static function publicMethods($class)
     {
         return (new \ReflectionClass($class))->getMethods(\ReflectionMethod::IS_PUBLIC);
-    }  
+    }
 
     /**
      * Format the partial ability string for the given model.
@@ -238,7 +238,7 @@ class Helper
      * @return string        
      */
     public static function formatOwnableAbility($model)
-    { 
+    {
         return implode('.', [Helper::OWNABLE, static::abilityKey($model)]);
     }
 
@@ -249,7 +249,7 @@ class Helper
      * @return string        
      */
     public static function formatPartialAbility($model)
-    { 
+    {
         return implode('.', [static::abilityKey($model), Helper::WILD_CARD]);
     }
 
@@ -261,7 +261,7 @@ class Helper
      * @return string        
      */
     public static function formatAbility($model, $ability)
-    { 
+    {
         return implode('.', [static::abilityKey($model), $ability]);
     }
 
@@ -272,7 +272,7 @@ class Helper
      * @return string        
      */
     public static function formatAbilityOwner($ability)
-    { 
+    {
         return implode('.', [$ability, static::OWNABLE]);
     }
 
@@ -284,7 +284,7 @@ class Helper
      */
     public static function abilityKey($model)
     {
-        return md5(is_object($model) ? get_class($model) : $model);
+        return is_object($model) ? get_class($model) : $model;
     }
 
     /**
@@ -296,7 +296,7 @@ class Helper
      */
     public static function isWithoutModelAbility($model, $ability)
     {
-        if($policy = Gate::getPolicyFor($model)) {
+        if ($policy = Gate::getPolicyFor($model)) {
             $method = collect(static::publicMethods($policy))->where('name', $ability)->first();
 
             return optional($method)->getNumberOfParameters() < 2;

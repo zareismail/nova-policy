@@ -1,13 +1,12 @@
 <?php
 
 namespace Zareismail\NovaPolicy;
- 
-use Illuminate\Support\ServiceProvider; 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Gate;
-use Laravel\Nova\Nova as LaravelNova;  
 
-class ToolServiceProvider extends ServiceProvider
+use Illuminate\Support\ServiceProvider as LaravelServiceProvider;
+use Illuminate\Support\Facades\Gate;
+use Laravel\Nova\Nova as LaravelNova;
+
+class ServiceProvider extends LaravelServiceProvider
 {
     /**
      * Bootstrap any application services.
@@ -15,19 +14,19 @@ class ToolServiceProvider extends ServiceProvider
      * @return void
      */
     public function boot()
-    { 
+    {
         if ($this->app->runningInConsole()) {
             $this->registerPublishing();
             $this->loadMigrations();
         }
 
-        $this->registerEvents();  
-        $this->registerPolicies();  
+        $this->registerEvents();
+        $this->registerPolicies();
         $this->registerRepository();
         $this->registerAuthenticator();
-        LaravelNova::serving([$this, 'servingNova']);  
-        $this->loadJsonTranslationsFrom(__DIR__.'/../resources/lang');
-    } 
+        LaravelNova::serving([$this, 'servingNova']);
+        $this->loadJsonTranslationsFrom(__DIR__ . '/../resources/lang');
+    }
 
     /**
      * Serving the Nova application.
@@ -35,10 +34,10 @@ class ToolServiceProvider extends ServiceProvider
      */
     public function servingNova()
     {
-        LaravelNova::resources([ 
+        LaravelNova::resources([
             Nova\Permission::class,
         ]);
-    } 
+    }
 
     /**
      * Register the package's publishable resources.
@@ -46,13 +45,13 @@ class ToolServiceProvider extends ServiceProvider
      * @return void
      */
     protected function registerPublishing()
-    { 
+    {
         $this->publishes([
-            __DIR__.'/../database/migrations' => database_path('migrations')
+            __DIR__ . '/../database/migrations' => database_path('migrations')
         ], 'nova-policy.migration');
 
         $this->publishes([
-            __DIR__.'/../config/nova-policy.php' => config_path('nova-policy.php')
+            __DIR__ . '/../config/nova-policy.php' => config_path('nova-policy.php')
         ], 'nova-policy.config');
     }
 
@@ -63,9 +62,9 @@ class ToolServiceProvider extends ServiceProvider
      */
     public function loadMigrations()
     {
-        $this->app->booted(function($app) {
-            if(config('nova-policy.migrations', true)) {
-                $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        $this->app->booted(function ($app) {
+            if (config('nova-policy.migrations', true)) {
+                $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
             }
         });
     }
@@ -76,14 +75,14 @@ class ToolServiceProvider extends ServiceProvider
      * @return void
      */
     public function registerEvents()
-    { 
-        $this->app->booted(function() {
-            collect(config('auth.providers'))->each(function($provider) {
-                $model = data_get($provider, 'model'); 
+    {
+        $this->app->booted(function () {
+            collect(config('auth.providers'))->each(function ($provider) {
+                $model = data_get($provider, 'model');
 
-                if(isset($model) && method_exists($model, 'saved')) {
-                    $model::saved(function($model = null) {
-                        if($model instanceof \Illuminate\Contracts\Auth\Authenticatable) {
+                if (isset($model) && method_exists($model, 'saved')) {
+                    $model::saved(function ($model = null) {
+                        if ($model instanceof \Illuminate\Contracts\Auth\Authenticatable) {
                             app(Contracts\Repository::class)->review($model);
                         }
                     });
@@ -98,13 +97,13 @@ class ToolServiceProvider extends ServiceProvider
      * @return void
      */
     public function registerPolicies()
-    { 
-        Gate::policy(PolicyRole::class, Policies\RolePolicy::class); 
+    {
+        Gate::policy(PolicyRole::class, Policies\RolePolicy::class);
 
-        Gate::before(function($user, $ability, $arguments = []) {
+        Gate::before(function ($user, $ability, $arguments = []) {
             return app(Contracts\Authenticator::class)->authorize($user, $ability, $arguments);
         });
-    }  
+    }
 
     /**
      * Register the `NovaPolicy` authenticator.
@@ -113,10 +112,10 @@ class ToolServiceProvider extends ServiceProvider
      */
     public function registerAuthenticator()
     {
-        $this->app->singleton(Contracts\Authenticator::class, function($app) {
+        $this->app->singleton(Contracts\Authenticator::class, function ($app) {
             return new NovaPolicy($app[Contracts\Repository::class]);
-        });  
-    } 
+        });
+    }
 
     /**
      * Register the `NovaPolicy` repository.
@@ -125,8 +124,8 @@ class ToolServiceProvider extends ServiceProvider
      */
     public function registerRepository()
     {
-        $this->app->singleton(Contracts\Repository::class, function($app) {
+        $this->app->singleton(Contracts\Repository::class, function ($app) {
             return new Repository($app);
-        });  
-    } 
+        });
+    }
 }

@@ -1,12 +1,12 @@
-<?php 
+<?php
 
 namespace Zareismail\NovaPolicy;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
- 
+
 class PolicyPermission extends Model
-{  
+{
     /**
      * Indicates if the model should be timestamped.
      *
@@ -28,12 +28,12 @@ class PolicyPermission extends Model
      * @return Illuminate\Database\Eloquent\Collection              
      */
     public static function sync(array $permissions)
-    {   
-        $missings = collect(static::filterMissings($permissions))->map(function($name) {
+    {
+        $missings = collect(static::filterMissings($permissions))->map(function ($name) {
             return compact('name');
         });
 
-        static::insert($missings->all()); 
+        static::insert($missings->all());
 
         return static::whereIn('name', $permissions)->get();
     }
@@ -45,7 +45,7 @@ class PolicyPermission extends Model
      * @return [type]              
      */
     public static function filterMissings(array $permissions)
-    { 
+    {
         return collect($permissions)->diff(static::get()->map->name)->unique()->toArray();
     }
 
