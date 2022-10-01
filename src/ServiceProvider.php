@@ -2,8 +2,8 @@
 
 namespace Zareismail\NovaPolicy;
 
-use Illuminate\Support\ServiceProvider as LaravelServiceProvider;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\ServiceProvider as LaravelServiceProvider;
 use Laravel\Nova\Nova as LaravelNova;
 
 class ServiceProvider extends LaravelServiceProvider
@@ -25,12 +25,11 @@ class ServiceProvider extends LaravelServiceProvider
         $this->registerRepository();
         $this->registerAuthenticator();
         LaravelNova::serving([$this, 'servingNova']);
-        $this->loadJsonTranslationsFrom(__DIR__ . '/../resources/lang');
+        $this->loadJsonTranslationsFrom(__DIR__.'/../resources/lang');
     }
 
     /**
      * Serving the Nova application.
-     *  
      */
     public function servingNova()
     {
@@ -47,11 +46,11 @@ class ServiceProvider extends LaravelServiceProvider
     protected function registerPublishing()
     {
         $this->publishes([
-            __DIR__ . '/../database/migrations' => database_path('migrations')
+            __DIR__.'/../database/migrations' => database_path('migrations'),
         ], 'nova-policy.migration');
 
         $this->publishes([
-            __DIR__ . '/../config/nova-policy.php' => config_path('nova-policy.php')
+            __DIR__.'/../config/nova-policy.php' => config_path('nova-policy.php'),
         ], 'nova-policy.config');
     }
 
@@ -64,7 +63,7 @@ class ServiceProvider extends LaravelServiceProvider
     {
         $this->app->booted(function ($app) {
             if (config('nova-policy.migrations', true)) {
-                $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+                $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
             }
         });
     }

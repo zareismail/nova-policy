@@ -2,14 +2,14 @@
 
 namespace Zareismail\NovaPolicy\Nova;
 
-use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use Laravel\Nova\Nova;
-use Laravel\Nova\Panel;
-use Laravel\Nova\Http\Requests\NovaRequest;
-use Laravel\Nova\Fields\{ID, Text, Select, Heading, BooleanGroup, BelongsToMany, Textarea};
-use PHPUnit\Framework\Test;
-use Zareismail\NovaPolicy\{Helper, PolicyPermission, Contracts\Ownable};
+use Illuminate\Support\Str;
+use Laravel\Nova\Fields\BooleanGroup;
+use Laravel\Nova\Fields\ID;
+use Laravel\Nova\Fields\Select;
+use Laravel\Nova\Fields\Text;
+use Laravel\Nova\Fields\Textarea;
+use Zareismail\NovaPolicy\Helper;
 
 abstract class Role extends Resource
 {
@@ -26,7 +26,7 @@ abstract class Role extends Resource
      * @var array
      */
     public static $with = [
-        'permissions'
+        'permissions',
     ];
 
     /**
@@ -46,36 +46,35 @@ abstract class Role extends Resource
 
             Text::make(__('Help Text'), 'help')->nullable(),
 
-
             Select::make(__('Has Access To'), 'level')
                 ->options([
                     Helper::BLOCKED => [
                         'label' => __('Nothing'),
-                        'group' => __('Wildcard')
+                        'group' => __('Wildcard'),
                     ],
                     Helper::OWNABLE => [
                         'label' => __('Some of the own-generated resources'),
-                        'group' => __('Owner')
+                        'group' => __('Owner'),
                     ],
                     Helper::WILD_CARD_OWNABLE => [
                         'label' => __('All of the own-generated resources'),
-                        'group' => __('Owner')
+                        'group' => __('Owner'),
                     ],
                     Helper::WILD_CARD_PARTIAL => [
                         'label' => __('Some of the generated resources'),
-                        'group' => __('Partial')
+                        'group' => __('Partial'),
                     ],
                     Helper::ACTION => [
                         'label' => __('Some of the available actions'),
-                        'group' => __('Partial')
+                        'group' => __('Partial'),
                     ],
                     Helper::PERMITTED => [
                         'label' => __('Somethings'),
-                        'group' => __('Partial')
+                        'group' => __('Partial'),
                     ],
                     Helper::WILD_CARD => [
                         'label' => __('Everything'),
-                        'group' => __('Wildcard')
+                        'group' => __('Wildcard'),
                     ],
                 ])
                 ->resolveUsing(function ($value, $resource, $attribute) {
@@ -142,7 +141,6 @@ abstract class Role extends Resource
                     $formData->level !== Helper::OWNABLE ? $field->hide() : $field->show();
                 }),
 
-
             BooleanGroup::make(__('Access To All'), Helper::WILD_CARD_PARTIAL)
                 ->options(collect(Helper::wildcardPartialResources())->pluck('label', 'key'))
                 ->fillUsing([$this, 'fillUPermissions'])
@@ -154,7 +152,7 @@ abstract class Role extends Resource
 
             $this->merge(collect(Helper::groupedAbilities())->flatMap(function ($group) {
                 return [
-                    BooleanGroup::make(__($group['group']), Helper::PERMITTED . "[{$group['key']}]")
+                    BooleanGroup::make(__($group['group']), Helper::PERMITTED."[{$group['key']}]")
                         ->options(collect($group['abilities'])->pluck('label', 'key'))
                         ->help(__('User can take this actions on the :group', ['group' => $group['group']]))
                         ->fillUsing(function () {
@@ -170,7 +168,7 @@ abstract class Role extends Resource
             BooleanGroup::make(__('Can'), Helper::ACTION)
                 ->options(collect(Helper::actions())->mapWithKeys(function ($action) {
                     return [
-                        $action => __(Str::replaceArray('.' . Helper::OWNABLE, [' [own genereated]'], $action) . ' resources'),
+                        $action => __(Str::replaceArray('.'.Helper::OWNABLE, [' [own genereated]'], $action).' resources'),
                     ];
                 }))
                 ->fillUsing(function () {
@@ -185,10 +183,10 @@ abstract class Role extends Resource
 
     /**
      * Get the permisison from the request with the given level.
-     * 
-     * @param  \Illuminate\Http\Request $request
-     * @param  string  $level  
-     * @return array          
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  string  $level
+     * @return array
      */
     public function fetchTheLevelPermissions(Request $request, string $level)
     {
@@ -213,19 +211,18 @@ abstract class Role extends Resource
 
     /**
      * Fillmodel with the permissions.
-     * 
-     * @param mixed $value     
-     * @param mixed  $resource  
-     * @param string  $attribute
-     *  
-     * @return  array           
+     *
+     * @param  mixed  $value
+     * @param  mixed  $resource
+     * @param  string  $attribute
+     * @return  array
      */
     public function fillUPermissions($request, $model, $attribute, $requestAttribute)
     {
         if (in_array($level = $request->get('level'), [
             Helper::BLOCKED,
             Helper::WILD_CARD,
-            Helper::WILD_CARD_OWNABLE
+            Helper::WILD_CARD_OWNABLE,
         ])) {
             return;
         }
@@ -240,12 +237,11 @@ abstract class Role extends Resource
 
     /**
      * Resolve the permission via true false value.
-     * 
-     * @param mixed $value     
-     * @param mixed  $resource  
-     * @param string  $attribute
-     *  
-     * @return  array           
+     *
+     * @param  mixed  $value
+     * @param  mixed  $resource
+     * @param  string  $attribute
+     * @return  array
      */
     public function resolvePermisisons($value, $resource, $attribute)
     {

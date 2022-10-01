@@ -14,9 +14,9 @@ class CreatePolicyPermissionRoleTable extends Migration
     public function up()
     {
         Schema::create('policy_permission_role', function (Blueprint $table) {
-            $table->id();  
-            $table->foreignId('policy_role_id')->constrained();  
-            $table->foreignId('policy_permission_id')->constrained();  
+            $table->id();
+            $table->foreignId('policy_role_id')->constrained();
+            $table->foreignId('policy_permission_id')->constrained();
         });
     }
 

@@ -14,9 +14,9 @@ class CreatePolicyRolesTable extends Migration
     public function up()
     {
         Schema::create('policy_roles', function (Blueprint $table) {
-            $table->id();  
-            $table->string('name'); 
-            $table->string('help')->nullable();  
+            $table->id();
+            $table->string('name');
+            $table->string('help')->nullable();
             $table->softDeletes();
         });
     }

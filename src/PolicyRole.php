@@ -18,7 +18,7 @@ class PolicyRole extends Model
 
     /**
      * Query the related permissions.
-     * 
+     *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
     public function permissions()
@@ -28,9 +28,9 @@ class PolicyRole extends Model
 
     /**
      * Sync the model with the given permissions.
-     * 
-     * @param  array  $permissions 
-     * @return $this              
+     *
+     * @param  array  $permissions
+     * @return $this
      */
     public function syncPermissions(array $permissions = [])
     {

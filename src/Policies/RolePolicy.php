@@ -107,7 +107,7 @@ class RolePolicy
     /**
      * Determine whether the user can permanently delete the policy role.
      *
-     * @param  \Zareismail\Contracts\User  $user 
+     * @param  \Zareismail\Contracts\User  $user
      * @return mixed
      */
     public function attachAnyPolicyPermission(User $user)

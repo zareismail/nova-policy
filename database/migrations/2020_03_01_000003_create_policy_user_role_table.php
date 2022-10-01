@@ -14,9 +14,9 @@ class CreatePolicyUserRoleTable extends Migration
     public function up()
     {
         Schema::create('policy_user_role', function (Blueprint $table) {
-            $table->id();  
-            $table->foreignId('policy_role_id')->constrained();  
-            $table->nullableMorphs('user');  
+            $table->id();
+            $table->foreignId('policy_role_id')->constrained();
+            $table->nullableMorphs('user');
         });
     }
 

@@ -3,7 +3,6 @@
 namespace Zareismail\NovaPolicy;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PolicyPermission extends Model
 {
@@ -23,9 +22,9 @@ class PolicyPermission extends Model
 
     /**
      * Sync the given permissions with the database.
-     * 
-     * @param  array  $permissions 
-     * @return Illuminate\Database\Eloquent\Collection              
+     *
+     * @param  array  $permissions
+     * @return Illuminate\Database\Eloquent\Collection
      */
     public static function sync(array $permissions)
     {
@@ -40,9 +39,9 @@ class PolicyPermission extends Model
 
     /**
      * Filter permissions that not exists in the database.
-     * 
-     * @param  array  $permissions 
-     * @return [type]              
+     *
+     * @param  array  $permissions
+     * @return [type]
      */
     public static function filterMissings(array $permissions)
     {

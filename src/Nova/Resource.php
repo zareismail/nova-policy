@@ -1,12 +1,12 @@
-<?php 
+<?php
 
 namespace Zareismail\NovaPolicy\Nova;
 
-use Laravel\Nova\Resource as NovaResource; 
-use Illuminate\Http\Request;        
+use Illuminate\Http\Request;
+use Laravel\Nova\Resource as NovaResource;
 
 abstract class Resource extends NovaResource
-{  
+{
     /**
      * The logical group associated with the resource.
      *
@@ -14,7 +14,7 @@ abstract class Resource extends NovaResource
      */
     public static $group = 'Nova Policy';
 
-	/**
+    /**
      * The single value that should be used to represent the resource when being displayed.
      *
      * @var string
@@ -27,7 +27,7 @@ abstract class Resource extends NovaResource
      * @var array
      */
     public static $search = [
-    	"name"
+        'name',
     ];
 
     /**
@@ -36,7 +36,7 @@ abstract class Resource extends NovaResource
      * @param  \Illuminate\Http\Request  $request
      * @return array
      */
-    abstract public function fields(Request $request); 
+    abstract public function fields(Request $request);
 
     /**
      * Determine if the resource should be available for the given request.
@@ -45,7 +45,7 @@ abstract class Resource extends NovaResource
      * @return bool
      */
     public function authorizeToViewAny(Request $request)
-    { 
+    {
     }
 
     /**

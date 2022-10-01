@@ -1,17 +1,17 @@
-<?php 
+<?php
 
 namespace Zareismail\NovaPolicy;
 
-use Illuminate\Database\Eloquent\Relations\Pivot; 
- 
+use Illuminate\Database\Eloquent\Relations\Pivot;
+
 class PolicyPermissionRole extends Pivot
-{     
+{
     /**
      * The table associated with the model.
      *
      * @var string
      */
-    protected $table = 'policy_permission_role';   
+    protected $table = 'policy_permission_role';
 
     /**
      * Bootstrap the model and its traits.
@@ -19,24 +19,24 @@ class PolicyPermissionRole extends Pivot
      * @return void
      */
     protected static function boot()
-    { 
-    	parent::boot();
+    {
+        parent::boot();
 
-    	static::saved(function($model) {  
-    		$model->flushCache();
-    	});  
+        static::saved(function ($model) {
+            $model->flushCache();
+        });
 
-    	static::deleting(function($model) {  
-    		$model->flushCache();
-    	});  
-    } 
+        static::deleting(function ($model) {
+            $model->flushCache();
+        });
+    }
 
     public function flushCache()
     {
-    	PolicyUserRole::with('user')
-    		->where('policy_role_id', $this->policy_role_id)->get()
-    		->each->flushCache();
+        PolicyUserRole::with('user')
+            ->where('policy_role_id', $this->policy_role_id)->get()
+            ->each->flushCache();
 
-    	return $this; 
+        return $this;
     }
 }

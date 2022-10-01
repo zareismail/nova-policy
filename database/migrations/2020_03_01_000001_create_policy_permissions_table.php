@@ -14,8 +14,8 @@ class CreatePolicyPermissionsTable extends Migration
     public function up()
     {
         Schema::create('policy_permissions', function (Blueprint $table) {
-            $table->id();  
-            $table->string('name');   
+            $table->id();
+            $table->string('name');
         });
     }
 

@@ -14,9 +14,9 @@ class CreatePolicyUserPermissionTable extends Migration
     public function up()
     {
         Schema::create('policy_user_permission', function (Blueprint $table) {
-            $table->id();  
-            $table->foreignId('policy_permission_id')->constrained();  
-            $table->nullableMorphs('user');  
+            $table->id();
+            $table->foreignId('policy_permission_id')->constrained();
+            $table->nullableMorphs('user');
         });
     }
 

@@ -1,12 +1,12 @@
-<?php 
+<?php
 
 namespace Zareismail\NovaPolicy;
- 
+
 use Illuminate\Contracts\Auth\Authenticatable;
 use Zareismail\NovaPolicy\Contracts\Repository as RepositoryContracts;
- 
+
 class Repository implements RepositoryContracts
-{  
+{
     /**
      * The application instance.
      *
@@ -35,7 +35,7 @@ class Repository implements RepositoryContracts
     /**
      * Determine the user that should be authenticate.
      *
-     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user 
+     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
      * @return $this
      */
     public function for(Authenticatable $user)
@@ -43,12 +43,12 @@ class Repository implements RepositoryContracts
         $this->user = $user;
 
         return $this;
-    } 
+    }
 
     /**
      * Get the user instance.
      *
-     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user 
+     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
      * @return $this
      */
     public function getUser()
@@ -58,7 +58,7 @@ class Repository implements RepositoryContracts
 
     /**
      * Determine if the given permission should be granted for the given user.
-     * 
+     *
      * @param  string  $permission
      * @param  array|mixed  $arguments
      * @return bool
@@ -67,7 +67,7 @@ class Repository implements RepositoryContracts
     {
         $cacheKey = $this->cacheKey($this->getUser());
 
-        if(! isset(static::$cachedPermissions[$cacheKey])) {
+        if (! isset(static::$cachedPermissions[$cacheKey])) {
             static::$cachedPermissions[$cacheKey] = $this->permissions();
         }
 
@@ -76,12 +76,12 @@ class Repository implements RepositoryContracts
 
     /**
      * Get the available user permissions.
-     * 
+     *
      * @return array
      */
     public function permissions(): array
     {
-        return $this->app['cache']->sear($this->cacheKey($this->getUser()), function() {
+        return $this->app['cache']->sear($this->cacheKey($this->getUser()), function () {
             return array_unique(array_merge(
                 $this->userRolesPermissions(), $this->userPermissions()
             ));
@@ -90,17 +90,17 @@ class Repository implements RepositoryContracts
 
     /**
      * Get the user staright permissions.
-     * 
+     *
      * @return array
      */
     public function userPermissions(): array
-    { 
+    {
         return PolicyUserPermission::authenticated($this->getUser())->get()->map->name->values()->all();
     }
 
     /**
      * Get the user permissions via roles.
-     * 
+     *
      * @return array
      */
     public function userRolesPermissions(): array
@@ -109,12 +109,12 @@ class Repository implements RepositoryContracts
                     ->map->role->filter()->values()
                     ->flatMap->permissions->filter()->values()
                     ->map->name->unique()->values()->all();
-    } 
+    }
 
     /**
      * Forget the cached values for the given user.
-     *  
-     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user 
+     *
+     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
      * @return $this
      */
     public function review(Authenticatable $user)
@@ -126,12 +126,12 @@ class Repository implements RepositoryContracts
 
     /**
      * Get the string cache key for the given user.
-     * 
-     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user 
-     * @return string                
+     *
+     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
+     * @return string
      */
     public function cacheKey(Authenticatable $user): string
-    { 
+    {
         return md5(get_called_class().get_class($user).$user->getAuthIdentifier());
     }
 }

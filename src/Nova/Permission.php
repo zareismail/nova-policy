@@ -1,20 +1,20 @@
-<?php 
+<?php
 
 namespace Zareismail\NovaPolicy\Nova;
- 
-use Illuminate\Http\Request;  
-use Laravel\Nova\Fields\ID;
-use Laravel\Nova\Fields\Text;       
+
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Laravel\Nova\Fields\ID;
+use Laravel\Nova\Fields\Text;
 
 class Permission extends Resource
-{ 
+{
     /**
      * The model the resource corresponds to.
      *
      * @var string
      */
-    public static $model = 'Zareismail\\NovaPolicy\\PolicyPermission'; 
+    public static $model = 'Zareismail\\NovaPolicy\\PolicyPermission';
 
     /**
      * Indicates if the resource should be displayed in the sidebar.
@@ -36,9 +36,9 @@ class Permission extends Resource
 
             Text::make(__('Role Name'), 'name')
                 ->required()
-                ->rules('required'),  
+                ->rules('required'),
         ];
-    }  
+    }
 
     /**
      * Get the value that should be displayed to represent the resource.
@@ -47,6 +47,6 @@ class Permission extends Resource
      */
     public function title()
     {
-        return Str::title(Str::snake(str_replace('.', ' ', parent::title()),  ' '));
+        return Str::title(Str::snake(str_replace('.', ' ', parent::title()), ' '));
     }
 }

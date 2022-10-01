@@ -10,56 +10,56 @@ class Helper
 {
     /**
      * Blocked ability string.
-     * 
+     *
      * @param  string
      */
     public const BLOCKED = 'none';
 
     /**
      * Ownable ability suffix.
-     * 
+     *
      * @param  string
      */
     public const OWNABLE = 'owner';
 
     /**
      * Permitted abilities identifier.
-     * 
+     *
      * @param  string
      */
     public const PERMITTED = 'permitted';
 
     /**
      * Action ability string.
-     * 
+     *
      * @param  string
      */
     public const ACTION = 'action';
 
     /**
      * Wild card ability string.
-     * 
+     *
      * @param  string
      */
     public const WILD_CARD = '*';
 
     /**
      * Partial ability string.
-     * 
+     *
      * @param  string
      */
     public const WILD_CARD_PARTIAL = 'partial';
 
     /**
      * Wild card ownable ability string.
-     * 
+     *
      * @param  string
      */
     public const WILD_CARD_OWNABLE = 'own';
 
     /**
      * Get the available resources for the authorization.
-     * 
+     *
      * @return array
      */
     public static function resources()
@@ -76,7 +76,7 @@ class Helper
 
     /**
      * Get the available ownable resources.
-     * 
+     *
      * @return array
      */
     public static function ownableResources()
@@ -90,7 +90,7 @@ class Helper
 
     /**
      * Get the available resources for the partial authorization.
-     * 
+     *
      * @return array
      */
     public static function wildcardPartialResources()
@@ -104,7 +104,7 @@ class Helper
 
     /**
      * Get the available actions for authorization.
-     * 
+     *
      * @return array
      */
     public static function actions()
@@ -114,9 +114,9 @@ class Helper
             ->unique()->values()->sortDesc()->all();
     }
 
-    /** 
+    /**
      * Get the grouped abilities.
-     *  
+     *
      * @return array
      */
     public static function groupedAbilities()
@@ -137,7 +137,7 @@ class Helper
 
     /**
      * Get globaly defined abilities.
-     * 
+     *
      * @return array
      */
     public static function definedAbilities()
@@ -148,18 +148,18 @@ class Helper
             'abilities' => collect(Gate::abilities())->keys()->map(function ($ability) {
                 return [
                     'key' => $ability,
-                    'label' => static::abilityLabel($ability)
+                    'label' => static::abilityLabel($ability),
                 ];
-            })->all()
+            })->all(),
         ];
     }
 
     /**
      * Get defined ability on the policy.
-     * 
-     * @param  string $policy
-     * @param  string $model 
-     * @return array        
+     *
+     * @param  string  $policy
+     * @param  string  $model
+     * @return array
      */
     public static function policyAbilities($policy, $model)
     {
@@ -167,16 +167,16 @@ class Helper
             return array_filter([
                 $method->name,
                 static::isOwnable($model) && $method->getNumberOfParameters() > 1
-                    ? static::formatAbilityOwner($method->name) : null
+                    ? static::formatAbilityOwner($method->name) : null,
             ]);
         })->values()->unique()->sortDesc();
     }
 
     /**
      * Detect if the given class implements Ownable.
-     * 
-     * @param  string $model 
-     * @return boolean        
+     *
+     * @param  string  $model
+     * @return bool
      */
     public static function isOwnable($model)
     {
@@ -185,9 +185,9 @@ class Helper
 
     /**
      * Detect if the given class uses InteractsWithPolicy.
-     * 
-     * @param  mixed $model 
-     * @return boolean        
+     *
+     * @param  mixed  $model
+     * @return bool
      */
     public static function isAuthorizable($model): bool
     {
@@ -196,9 +196,9 @@ class Helper
 
     /**
      * Get the model label.
-     * 
-     * @param  string $model 
-     * @return string        
+     *
+     * @param  string  $model
+     * @return string
      */
     public static function modelLabel($model)
     {
@@ -211,9 +211,9 @@ class Helper
 
     /**
      * Get the ability label.
-     * 
-     * @param  string $ability
-     * @return string         
+     *
+     * @param  string  $ability
+     * @return string
      */
     public static function abilityLabel($ability)
     {
@@ -222,9 +222,9 @@ class Helper
 
     /**
      * Get the class public methods.
-     * 
-     * @param  string $class 
-     * @return array        
+     *
+     * @param  string  $class
+     * @return array
      */
     public static function publicMethods($class)
     {
@@ -233,9 +233,9 @@ class Helper
 
     /**
      * Format the partial ability string for the given model.
-     * 
-     * @param  string $model 
-     * @return string        
+     *
+     * @param  string  $model
+     * @return string
      */
     public static function formatOwnableAbility($model)
     {
@@ -244,9 +244,9 @@ class Helper
 
     /**
      * Format the partial ability string for the given model.
-     * 
-     * @param  string $model 
-     * @return string        
+     *
+     * @param  string  $model
+     * @return string
      */
     public static function formatPartialAbility($model)
     {
@@ -255,10 +255,10 @@ class Helper
 
     /**
      * Format the ability string for the given model.
-     * 
-     * @param  string $model 
-     * @param  string $ability 
-     * @return string        
+     *
+     * @param  string  $model
+     * @param  string  $ability
+     * @return string
      */
     public static function formatAbility($model, $ability)
     {
@@ -267,9 +267,9 @@ class Helper
 
     /**
      * Format the ability string for the given model.
-     *  
-     * @param  string $ability 
-     * @return string        
+     *
+     * @param  string  $ability
+     * @return string
      */
     public static function formatAbilityOwner($ability)
     {
@@ -278,9 +278,9 @@ class Helper
 
     /**
      * Make the ability key for the given model.
-     * 
-     * @param  $model 
-     * @return        
+     *
+     * @param    $model
+     * @return
      */
     public static function abilityKey($model)
     {
@@ -289,10 +289,10 @@ class Helper
 
     /**
      * Detect if policy method is without model action.
-     * 
-     * @param  mixed  $model   
-     * @param  string  $ability 
-     * @return boolean          
+     *
+     * @param  mixed  $model
+     * @param  string  $ability
+     * @return bool
      */
     public static function isWithoutModelAbility($model, $ability)
     {

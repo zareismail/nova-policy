@@ -1,10 +1,9 @@
-<?php 
+<?php
 
-namespace Zareismail\NovaPolicy\Contracts; 
-
+namespace Zareismail\NovaPolicy\Contracts;
 
 interface Authenticator
-{ 
+{
     /**
      * Determine if the given ability should be granted for the given user.
      *
